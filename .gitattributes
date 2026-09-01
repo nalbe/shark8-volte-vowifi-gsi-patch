@@ -1,0 +1,4 @@
+# Force LF for shell scripts so Android can run them
+*.sh text eol=lf
+*.prop text eol=lf
+*.md text eol=lf

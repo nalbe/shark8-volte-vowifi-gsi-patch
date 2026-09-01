@@ -1,0 +1,7 @@
+id=volte_fw
+name=VoLTE framework patch
+version=v1
+versionCode=1
+author=Bastet
+description=Patches CarrierConfigManager carrier_volte_available_bool default to true. Enables MTK IMS VoLTE gating on AOSP-based GSI.
+minMagisk=15000
