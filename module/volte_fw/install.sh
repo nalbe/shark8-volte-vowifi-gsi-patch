@@ -8,6 +8,11 @@
 #      Native overlayfs whiteouts are char devices with major 0 minor 0.
 #   4. Reboot, then verify: ls /system/framework/arm64/ (files must be gone)
 #      and: dumpsys carrier_config | grep carrier_volte_available_bool -> true
+#      and: dumpsys carrier_config | grep carrier_wfc_ims_available_bool -> true
+#   5. service.sh applies WFC runtime state on every boot (log:
+#      /data/local/tmp/wfc_service.log). After first boot also verify:
+#      settings get global wfc_ims_enabled -> 1
+#      cmd phone cc get-value -s 2 carrier_wfc_ims_available_bool -> true
 
 set -e
 FW=/data/adb/modules/volte_fw/system/framework
