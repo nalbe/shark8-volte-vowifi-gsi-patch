@@ -3,8 +3,9 @@
 Enable VoLTE and VoWiFi (Wi-Fi Calling / IWLAN) on a MediaTek MT6789 device
 running a phh GSI (Android 14) ROM.
 
-**Status: WORKING** - verified on device 2026-09-01. See `PATCH.md` for the full
-diagnosis and change history.
+**Status: WORKING** - verified on device 2026-09-02 (live VoWiFi call, MO + MT,
+talked over IWLAN; IMS PDN on ipsec1 via WLAN, getRilDataRadioTechnology=18).
+See `PATCH.md` for the full diagnosis and change history.
 
 ## What it is
 
@@ -19,21 +20,24 @@ those flags to `true`, delivered as a KernelSU module. At boot a `service.sh`
 additionally applies the runtime state the MTK IMS stack needs (persist prop,
 siminfo `wfc_ims_*`, global settings, carrier-config overrides).
 
-Verified result (VoLTE):
-
-- `carrier_volte_available_bool = true` (carrier_config)
-- IMS registered over LTE (EIREG reg_state=1)
-- SST registered=true
-- IMS PDN CONNECTED, QCI5, P-CSCF obtained
-- isVopsSupported=true, MMTEL READY
-
-Verified result (VoWiFi):
+Verified result (VoWiFi - confirmed by live call):
 
 - `carrier_wfc_ims_available_bool = true`, `carrier_default_wfc_ims_enabled_bool = true`
 - MTK QNS: `isWfcEnabledByUser:true`
 - IMS PDN CONNECTED via WLAN/IWLAN (ipsec1, P-CSCF obtained, validation success)
 - `+EIREG: 1,0,5` -> reg_state=1 (IMS registered on IWLAN)
 - MMTEL READY, `getRilDataRadioTechnology=18(IWLAN)`, `mIsIwlanPreferred=true`
+- live call placed by the user (Wi-Fi ON) talked over IWLAN/VoWiFi; both test
+  calls carried ImsReasonInfo in DisconnectCause; audio confirmed
+
+Verified result (VoLTE - IMS registration on LTE, live call not yet recorded):
+
+- `carrier_volte_available_bool = true` (carrier_config)
+- IMS registered over LTE (EIREG reg_state=1, rat=0, tech 0)
+- SST registered=true
+- IMS PDN CONNECTED, QCI5, P-CSCF obtained
+- isVopsSupported=true, MMTEL READY
+- (note: IMS prefers IWLAN while Wi-Fi is ON; verify VoLTE with Wi-Fi OFF)
 
 ## Targets
 
@@ -51,8 +55,10 @@ fix.
 ```
 framework/              framework-patched.jar (v2, WFC + VoLTE),
                         classes3-wfc.dex, CarrierConfigManager.patched.smali
-module/volte_fw/        module template + install.sh (whiteout creation) +
-                        service.sh (per-boot runtime state)
+module/volte_fw/        module template + install.sh (creates empty-regular-file
+                        shadows of boot-framework.{art,oat,vdex}; NOT char-device
+                        whiteouts, which break the KernelSU 0.9.4 overlay builder)
+                        + service.sh (per-boot runtime state)
 tools/                  baksmali 3.0.7, smali 3.0.7, dexlib2 3.0.7 fat jars
 PATCH.md                full diagnosis, build steps, install/rollback
 ```

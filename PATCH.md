@@ -185,12 +185,42 @@ Install (volte_fw):
     contains service.sh (per-boot WFC/VoLTE runtime state, idempotent)
   - put framework/framework-patched.jar at
     /data/adb/modules/volte_fw/system/framework/framework.jar
-  - run module/volte_fw/install.sh (creates the char-device whiteouts)
+  - run module/volte_fw/install.sh (creates EMPTY-REGULAR-FILE shadows of
+    the boot-image artifacts, NOT char-device whiteouts)
   - reboot
-  - verify: ls /system/framework/arm64/ shows nothing;
+  - verify: ls -l /system/framework/arm64/boot-framework.* shows 0 bytes;
     dumpsys carrier_config | grep carrier_volte_available_bool -> true;
     dumpsys carrier_config | grep carrier_wfc_ims_available_bool -> true;
     cat /data/local/tmp/wfc_service.log (service.sh ran)
+
+IMPORTANT (KernelSU 0.9.4): the overlay builder SKIPS a module whose
+system/ tree contains char-device whiteouts (mknod c 0 0). Use empty
+regular files instead. When the KSU overlay mounts, the 0-byte files
+shadow the stock boot-framework.{art,oat,vdex}, forcing ART to fall
+back to interpreting the patched jar. Files to shadow:
+  - system/framework/arm64/boot-framework.art
+  - system/framework/arm64/boot-framework.oat
+  - system/framework/arm64/boot-framework.vdex
+  - system/framework/boot-framework.vdex
+
+CONFIRMED WORKING 2026-09-02 (VoWiFi, live call):
+the live call the user placed and talked on ran over IWLAN
+(VoWiFi), because Wi-Fi was ON at the time. Current state with
+Wi-Fi ON: IMS PDN "PHH IMS" (ims APN) is CONNECTED over
+transport WLAN / network type IWLAN on interface ipsec1 with
+P-CSCF obtained and network validation success. ServiceState:
+getRilDataRadioTechnology=18(IWLAN), mIsIwlanPreferred=true.
+Both test calls in dumpsys telecom carried ImsReasonInfo in
+DisconnectCause (IMS-signaled sessions). Talk audio confirmed by
+the user.
+
+VoLTE (calls over LTE with Wi-Fi OFF) is NOT yet verified by a
+live call in this session. The stack reaches IMS REGISTERED on
+LTE (reg_state=1, rat=0, tech 0) when Wi-Fi is off, and voice RAT
+holds LTE with isVopsSupported=true -- signal that VoLTE would
+work -- but a dedicated call with Wi-Fi radio-disconnected has
+not been tested. To verify: turn Wi-Fi OFF (svc wifi disable),
+then place a call and confirm voice stays on LTE with no CSFB.
 
 Rollback:
   - delete or disable module volte_fw in the KSU manager
@@ -208,6 +238,6 @@ Cautions after device reboot:
 
 framework/              framework-patched.jar (39,783,920 B, v2 WFC+VoLTE),
                         classes3-wfc.dex, CarrierConfigManager.patched.smali
-module/volte_fw/        module template + install.sh (whiteout creation) +
-                        service.sh (per-boot runtime state)
+module/volte_fw/        module template + install.sh (empty-file shadow
+                        creation) + service.sh (per-boot runtime state)
 tools/                  baksmali 3.0.7, smali 3.0.7, dexlib2 3.0.7 fat jars
