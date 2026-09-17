@@ -80,11 +80,15 @@ PATCH.md                full diagnosis, build steps, install/rollback
 
 ## Quick start
 
+Download `volte_fw-v5.zip` from the
+[latest release](https://github.com/nalbe/shark8-volte-vowifi-gsi-patch/releases)
+(or rebuild it yourself - the module tree below is the payload source).
+
 Zip based (v5, recommended - avoids the first-boot bootloop, see PATCH.md):
 
 ```sh
-# build: stage module/volte_fw minus install.sh (customize.sh + module.prop +
-#        service.sh + system/framework/{framework,telephony-common}.jar),
+# build (optional): stage module/volte_fw minus install.sh (customize.sh +
+#        module.prop + service.sh + system/framework/{framework,telephony-common}.jar),
 #        then:  tar.exe -a -cf volte_fw-v5.zip *
 # device, as root
 adb push volte_fw-v5.zip /data/local/tmp/
