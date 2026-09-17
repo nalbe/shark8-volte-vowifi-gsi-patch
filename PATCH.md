@@ -288,8 +288,15 @@ Two additions on top of v3 (both in `module/volte_fw`, module.prop bumped to v5)
 Artifacts:
 - `module/volte_fw/system/framework/framework.jar` (39,783,920 B) +
   `telephony-common.jar` (2,136,126 B) - the full overlay payload.
-- `volte_fw-v5.zip` (16,458,412 B) = module.prop + customize.sh + service.sh +
-  both jars (`tar.exe -a -cf`; install via `ksud module install`).
+- `wfc_indicator.apk` (~25 KB, AOSP testkey) - the status-bar indicator app,
+  staged into the module at build time and installed by `customize.sh`
+  (`pm install -r` + runtime permission grants).
+- `volte_fw-v5.zip` = module.prop + customize.sh + service.sh + both jars +
+  wfc_indicator.apk (built by `build-release.ps1` via `tar.exe -a -cf`; install
+  via `ksud module install`). Self-contained: one flash enables IMS and installs
+  the indicator app.
+- NOTE: `customize.sh` is SOURCED (not executed) by the ksud installer, so it
+  must use `return`, never `exit` (an `exit` kills the installer shell).
 
 ## Bundle layout
 
@@ -297,13 +304,15 @@ framework/              framework-patched.jar (carrier-config patch, shipped as
                         module system/framework/framework.jar),
                         classes3-wfc.dex, CarrierConfigManager.patched.smali
 module/volte_fw/        module tree = the shipped zip payload:
-                        customize.sh (install-time logger, no-op),
+                        customize.sh (installs the bundled indicator apk),
                         module.prop, service.sh (per-boot runtime state +
                         iwlan disable), install.sh (dev helper for the legacy
                         hand-push method) and system/framework/ with both
                         patched jars (framework.jar + telephony-common.jar)
 tools/                  baksmali 3.0.7, smali 3.0.7, dexlib2 3.0.7 fat jars
 checker/wfc_indicator/  standalone VoLTE/VoWiFi status-bar checker app
-                        (sources + build.ps1 + prebuilt wfc_indicator apks)
+                        (sources + build.ps1; apk is bundled into the module)
 a16_*.patch             experimental source patches for a custom ROM build
-volte_fw-v5.zip         built, installable module (ksud module install)
+build-release.ps1       builds the single self-contained module zip
+volte_fw-v5.zip         built, installable module = IMS patch + indicator app
+                        (ksud module install)

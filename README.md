@@ -7,7 +7,9 @@ running a phh GSI (Android 14) ROM.
 talked over IWLAN; IMS PDN on ipsec1 via WLAN, getRilDataRadioTechnology=18).
 v3 zip install (bootloop fix) verified 2026-09-16; v5 adds the
 `ImsPhoneCallTracker.isVowifiEnabled` patch (telephony-common.jar) and disables
-the conflicting stock Google IWLAN client (see below). Full history: `PATCH.md`.
+the conflicting stock Google IWLAN client (see below). The release zip is
+self-contained: `customize.sh` also installs the status-bar indicator app. Full
+history: `PATCH.md`.
 
 ## What it is
 
@@ -63,18 +65,24 @@ framework/              framework-patched.jar (carrier-config patch, shipped as
                         module system/framework/framework.jar),
                         classes3-wfc.dex, CarrierConfigManager.patched.smali
 module/volte_fw/        module tree = the shipped zip payload:
-                        customize.sh (install-time logger, no-op),
-                        module.prop, service.sh (per-boot runtime state +
-                        iwlan disable), install.sh (dev helper for the legacy
-                        hand-push method) and system/framework/ with both
-                        patched jars (framework.jar + telephony-common.jar)
+                        customize.sh (installs the bundled indicator apk +
+                        grants its runtime permissions), module.prop, service.sh
+                        (per-boot runtime state + iwlan disable), install.sh
+                        (dev helper for the legacy hand-push method) and
+                        system/framework/ with both patched jars
+                        (framework.jar + telephony-common.jar).
+                        wfc_indicator.apk is staged here at build time
+                        (gitignored) and packed into the zip
 tools/                  baksmali 3.0.7, smali 3.0.7, dexlib2 3.0.7 fat jars
 checker/wfc_indicator/  standalone VoLTE/VoWiFi status-bar checker app
-                        (sources + build.ps1 + prebuilt wfc_indicator_v1.apk)
-a16_*.patch             experimental source patches for building a custom ROM
+                        (sources + build.ps1; the apk is bundled into the
+                        module zip, no separate release asset)
+a16_*.patch             experimental source patches for a custom ROM
                         (VoLTE/WFC status icons, carrier-config defaults,
                         phh-treble/APN/build fixes)
-volte_fw-v5.zip         built, installable module (ksud module install)
+build-release.ps1       builds the single self-contained module zip
+volte_fw-v5.zip         built, installable module = IMS patch + indicator app
+                        (ksud module install)
 PATCH.md                full diagnosis, build steps, install/rollback
 ```
 
@@ -84,17 +92,23 @@ Download `volte_fw-v5.zip` from the
 [latest release](https://github.com/nalbe/shark8-volte-vowifi-gsi-patch/releases)
 (or rebuild it yourself - the module tree below is the payload source).
 
-Zip based (v5, recommended - avoids the first-boot bootloop, see PATCH.md):
+Zip based (v5, recommended - avoids the first-boot bootloop, see PATCH.md).
+One zip carries everything - the IMS patch and the status-bar indicator app:
 
 ```sh
-# build (optional): stage module/volte_fw minus install.sh (customize.sh +
-#        module.prop + service.sh + system/framework/{framework,telephony-common}.jar),
-#        then:  tar.exe -a -cf volte_fw-v5.zip *
+# build (optional): powershell -ExecutionPolicy Bypass -File build-release.ps1
+#        (builds checker/wfc_indicator, stages module/volte_fw + wfc_indicator.apk,
+#         packs with tar.exe -a -cf)
 # device, as root
 adb push volte_fw-v5.zip /data/local/tmp/
 adb shell /data/adb/ksu/bin/ksud module install /data/local/tmp/volte_fw-v5.zip
 adb reboot
 ```
+
+The same flash installs the indicator app: `customize.sh` runs
+`pm install -r` on the bundled `wfc_indicator.apk` and grants
+POST_NOTIFICATIONS + READ_PHONE_STATE at module-install time (log:
+`/data/local/tmp/volte_fw_install.log`). No separate `adb install` needed.
 
 Legacy push method (v2, causes first-boot bootloop - do not install this way):
 
@@ -165,17 +179,20 @@ Detection is event-driven: `TelephonyCallback`
 (`onServiceStateChanged`/`onDataConnectionStateChanged` per subscription) +
 `ConnectivityManager` network callbacks - no polling. The icon lives in the
 RIGHT notification zone (it is a foreground-service notification on a silent
-`IMPORTANCE_MIN` channel), not in the system zone left of the signal icons.
+`IMPORTANCE_DEFAULT` channel with sound/vibration off), not in the system zone
+left of the signal icons.
 
 Build: `powershell -ExecutionPolicy Bypass -File build.ps1` (needs Android SDK
 build-tools 34.0.0, platforms/android-34 and JDK 17; paths at the top of the
-script). The shipped `wfc_indicator_v1.apk` is prebuilt and signed with the
-AOSP testkey.
+script). The apk is built and signed with the AOSP testkey; `build-release.ps1`
+bundles it into `volte_fw-v5.zip`, which installs it automatically (see Quick
+start) - no separate release asset.
 
-Install:
+Install (manual, app-only - the module zip already does this):
 
 ```sh
-adb install -r checker/wfc_indicator/wfc_indicator_v1.apk
+powershell -ExecutionPolicy Bypass -File build.ps1   # -> wfc_indicator.apk
+adb install -r wfc_indicator.apk
 adb shell pm grant com.wfcind.app android.permission.POST_NOTIFICATIONS
 adb shell pm grant com.wfcind.app android.permission.READ_PHONE_STATE
 adb shell am start -n com.wfcind.app/.MainActivity
