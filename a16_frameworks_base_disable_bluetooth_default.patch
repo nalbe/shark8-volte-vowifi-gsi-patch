@@ -1,0 +1,102 @@
+diff --git a/packages/SettingsLib/src/com/android/settingslib/mobile/MobileMappings.java b/packages/SettingsLib/src/com/android/settingslib/mobile/MobileMappings.java
+index cf52eb3ab..34ae6e2a2 100644
+--- a/packages/SettingsLib/src/com/android/settingslib/mobile/MobileMappings.java
++++ b/packages/SettingsLib/src/com/android/settingslib/mobile/MobileMappings.java
+@@ -190,6 +190,14 @@ public class MobileMappings {
+                         TelephonyIcons.LTE_PLUS);
+             }
+         }
++        if (config.showVolteIcon) {
++            networkToIconLookup.put(toIconKey(
++                    TelephonyManager.NETWORK_TYPE_LTE),
++                    TelephonyIcons.VOLTE);
++            networkToIconLookup.put(toDisplayIconKey(
++                    TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA),
++                    TelephonyIcons.VOLTE);
++        }
+         networkToIconLookup.put(toIconKey(
+                 TelephonyManager.NETWORK_TYPE_IWLAN),
+                 TelephonyIcons.WFC);
+@@ -216,6 +224,7 @@ public class MobileMappings {
+         public boolean show4gFor3g = false;
+         public boolean alwaysShowCdmaRssi = false;
+         public boolean show4gForLte = false;
++        public boolean showVolteIcon = false;
+         public boolean show4glteForLte = false;
+         public boolean hideLtePlus = false;
+         public boolean hspaDataDistinguishable;
+@@ -230,6 +239,7 @@ public class MobileMappings {
+             Resources res = context.getResources();
+ 
+             config.showAtLeast3G = res.getBoolean(R.bool.config_showMin3G);
++            config.showVolteIcon = res.getBoolean(com.android.internal.R.bool.config_device_volte_available);
+             config.alwaysShowCdmaRssi =
+                     res.getBoolean(com.android.internal.R.bool.config_alwaysUseCdmaRssi);
+             config.hspaDataDistinguishable =
+diff --git a/packages/SettingsLib/src/com/android/settingslib/mobile/TelephonyIcons.java b/packages/SettingsLib/src/com/android/settingslib/mobile/TelephonyIcons.java
+index 9ca46238c..0347983e2 100644
+--- a/packages/SettingsLib/src/com/android/settingslib/mobile/TelephonyIcons.java
++++ b/packages/SettingsLib/src/com/android/settingslib/mobile/TelephonyIcons.java
+@@ -87,7 +87,12 @@ public class TelephonyIcons {
+     public static final MobileIconGroup WFC = new MobileIconGroup(
+             "WFC",
+             /* dataContentDescription= */ 0,
+-            /* dataType= */ 0);
++            /* dataType= */ R.drawable.ic_wfc_mobiledata);
++
++    public static final MobileIconGroup VOLTE = new MobileIconGroup(
++            "Volte",
++            /* dataContentDescription= */ 0,
++            /* dataType= */ R.drawable.ic_volte_mobiledata);
+ 
+     public static final MobileIconGroup UNKNOWN = new MobileIconGroup(
+             "Unknown",
+@@ -206,6 +211,7 @@ public class TelephonyIcons {
+         ICON_NAME_TO_ICON.put("carrier_network_change", CARRIER_NETWORK_CHANGE);
+         ICON_NAME_TO_ICON.put("3g", THREE_G);
+         ICON_NAME_TO_ICON.put("wfc", WFC);
++        ICON_NAME_TO_ICON.put("volte", VOLTE);
+         ICON_NAME_TO_ICON.put("unknown", UNKNOWN);
+         ICON_NAME_TO_ICON.put("e", E);
+         ICON_NAME_TO_ICON.put("1x", ONE_X);
+diff --git a/packages/SettingsProvider/res/values/defaults.xml b/packages/SettingsProvider/res/values/defaults.xml
+index 94aa955f0..cbd78bc70 100644
+--- a/packages/SettingsProvider/res/values/defaults.xml
++++ b/packages/SettingsProvider/res/values/defaults.xml
+@@ -38,7 +38,7 @@
+     <fraction name="def_window_transition_scale">100%</fraction>
+     <bool name="def_haptic_feedback">true</bool>
+ 
+-    <bool name="def_bluetooth_on">true</bool>
++    <bool name="def_bluetooth_on">false</bool>
+     <bool name="def_wifi_display_on">false</bool>
+     <bool name="def_install_non_market_apps">false</bool>
+     <!-- 0 == off, 3 == on -->
+diff --git a/telephony/java/android/telephony/CarrierConfigManager.java b/telephony/java/android/telephony/CarrierConfigManager.java
+index cbeb5ee1d..f485c8e67 100644
+--- a/telephony/java/android/telephony/CarrierConfigManager.java
++++ b/telephony/java/android/telephony/CarrierConfigManager.java
+@@ -10811,7 +10811,7 @@ public class CarrierConfigManager {
+         sDefaults.putBoolean(KEY_APN_EXPAND_BOOL, true);
+         sDefaults.putBoolean(KEY_AUTO_RETRY_ENABLED_BOOL, false);
+         sDefaults.putBoolean(KEY_CARRIER_SETTINGS_ENABLE_BOOL, false);
+-        sDefaults.putBoolean(KEY_CARRIER_VOLTE_AVAILABLE_BOOL, false);
++        sDefaults.putBoolean(KEY_CARRIER_VOLTE_AVAILABLE_BOOL, true);
+         sDefaults.putBoolean(KEY_CARRIER_VT_AVAILABLE_BOOL, false);
+         sDefaults.putInt(KEY_CARRIER_USSD_METHOD_INT, USSD_OVER_CS_PREFERRED);
+         sDefaults.putBoolean(KEY_VOLTE_5G_LIMITED_ALERT_DIALOG_BOOL, false);
+@@ -10825,11 +10825,11 @@ public class CarrierConfigManager {
+         sDefaults.putBoolean(KEY_CONFIG_TELEPHONY_USE_OWN_NUMBER_FOR_VOICEMAIL_BOOL, false);
+         sDefaults.putBoolean(KEY_IGNORE_DATA_ENABLED_CHANGED_FOR_VIDEO_CALLS, true);
+         sDefaults.putBoolean(KEY_VILTE_DATA_IS_METERED_BOOL, true);
+-        sDefaults.putBoolean(KEY_CARRIER_WFC_IMS_AVAILABLE_BOOL, false);
++        sDefaults.putBoolean(KEY_CARRIER_WFC_IMS_AVAILABLE_BOOL, true);
+         sDefaults.putBoolean(KEY_CARRIER_CROSS_SIM_IMS_AVAILABLE_BOOL, false);
+         sDefaults.putBoolean(KEY_ENABLE_CROSS_SIM_CALLING_ON_OPPORTUNISTIC_DATA_BOOL, false);
+-        sDefaults.putBoolean(KEY_CARRIER_WFC_SUPPORTS_WIFI_ONLY_BOOL, false);
+-        sDefaults.putBoolean(KEY_CARRIER_DEFAULT_WFC_IMS_ENABLED_BOOL, false);
++        sDefaults.putBoolean(KEY_CARRIER_WFC_SUPPORTS_WIFI_ONLY_BOOL, true);
++        sDefaults.putBoolean(KEY_CARRIER_DEFAULT_WFC_IMS_ENABLED_BOOL, true);
+         sDefaults.putBoolean(KEY_CARRIER_DEFAULT_WFC_IMS_ROAMING_ENABLED_BOOL, false);
+         sDefaults.putBoolean(KEY_CARRIER_PROMOTE_WFC_ON_CALL_FAIL_BOOL, false);
+         sDefaults.putInt(KEY_CARRIER_DEFAULT_WFC_IMS_MODE_INT, 2);

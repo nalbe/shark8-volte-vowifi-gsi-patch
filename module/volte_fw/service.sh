@@ -6,10 +6,33 @@
 #   - siminfo wfc_ims_enabled / wfc_ims_mode per subscription
 #   - global settings wfc_ims_enabled / wfc_ims_mode (ImsPhone fallback)
 #   - carrier config overrides so the framework sees WFC available
+#   - disable the Google IWLAN data-service client (com.google.android.iwlan)
+#     that races the MTK modem eIMS/ePDG client (epdg_wod) for the ePDG
+#     address pool
 # Idempotent. Plain ASCII. Logs to /data/local/tmp/wfc_service.log
 
 LOG=/data/local/tmp/wfc_service.log
 echo "=== wfc_service.sh $(date) ===" >> "$LOG"
+
+# 0. Disable the resident Google IWLAN client. On this MTK GSI the modem hosts
+#    its own IMS stack (eIMS via epdg_wod + volte_stack) and creates its own
+#    ccmni* PDN with a modem-assigned address. com.google.android.iwlan runs a
+#    parallel ePDG client in userspace (IwlanDataService) that creates ipsec*
+#    tunnels. On WiFi re-association both race for the same ePDG address pool;
+#    iwlan (fast, Connectivity-event driven) usually wins, takes the modem's
+#    address, and the modem drops its PDN (reg_state<0>) -> calls fall back to
+#    CS. The modem never uses the iwlan tunnel, so the package is dead weight.
+#    disable-user persists across reboots and is idempotent; safe when the
+#    package is absent (e.g. stock MTK ROM where it was never shipped).
+if pm path com.google.android.iwlan >/dev/null 2>&1; then
+    pm disable-user --user 0 com.google.android.iwlan >> "$LOG" 2>&1
+    echo "com.google.android.iwlan -> disabled-user (ePDG race removed)" >> "$LOG"
+    # Kill a live instance so it cannot keep/serve stale sockets.
+    PID=$(pidof com.google.android.iwlan 2>/dev/null)
+    if [ -n "$PID" ]; then
+        kill "$PID" 2>/dev/null && echo "iwlan process $PID killed" >> "$LOG"
+    fi
+fi
 
 # 1. MTK IWLAN gate prop (persist -> survives reboot, value normalizes to 3)
 setprop persist.vendor.mtk.wfc.enable 1

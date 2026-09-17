@@ -234,10 +234,76 @@ Cautions after device reboot:
     enabled the IMS stack prefers IWLAN when Wi-Fi is present
   - restore Wi-Fi with: svc wifi enable
 
+## v3 fix (2026-09-16) - first-boot bootloop root cause
+
+The v2 module (0-byte shadows + patched jar) caused a guaranteed bootloop on
+the FIRST boot after ANY `ksud module install` (3/3 reproductions, also
+triggered by installing an unrelated module like led_hal_root). Root cause:
+
+- On first boot after a module install, KSU rebuilds the /system overlay and
+  ART re-validates the boot classpath.
+- The 0-byte `boot-framework.{art,oat,vdex}` shadows make ART fail with
+  "boot-framework.oat is too short to be a valid ELF" / "Bad checksum" on
+  `framework.jar!classes4.dex` -> `RuntimeInit` JNI abort -> zygote32/64 crash
+  loop. Subsequent boots were clean only because ART served from its cached
+  image; the first overlay rebuild always tripped it.
+- v3 module = patched `framework.jar` ONLY, no shadow files at all, proper
+  `customize.sh` (no-op logger), installed as a normal `ksud module install`
+  zip. VERIFIED 2026-09-16: first boot after install clean, carrier_config
+  flags all true, QNS `isWfcEnabledByUser:true`. ART tolerates the patched jar
+  on overlay with stock boot images present.
+
+Build v3 zip (Windows): stage module.prop + service.sh + customize.sh +
+system/framework/framework.jar (patched), then
+`tar.exe -a -cf volte_fw-v3.zip *` (Compress-Archive corrupts paths).
+Install: `ksud module install /data/local/tmp/volte_fw-v3.zip` then reboot.
+NOTE: `ksud module install` stages the module into modules_update.img; it
+lands in /data/adb/modules only after the first boot commit.
+
+Rollback from any bootloop state:
+- `adb root`; `touch /data/adb/modules/volte_fw/disable`; reboot.
+
+## v5 (2026-09-16) - isVowifiEnabled patch + disabling the stock Google IWLAN client
+
+Two additions on top of v3 (both in `module/volte_fw`, module.prop bumped to v5):
+
+1. Patched `telephony-common.jar` - `ImsPhoneCallTracker.isVowifiEnabled`.
+   The IWLAN-capability check no longer requires `getImsRegistrationTech==IWLAN`
+   (smali-level patch on the same class, shipped as
+   `system/framework/telephony-common.jar`, 2,136,126 B). The carrier-config
+   patch stays in `framework.jar` (`CarrierConfigManager.<clinit>`, unchanged).
+2. `service.sh` step 0 disables the resident Google IWLAN client:
+   `pm disable-user --user 0 com.google.android.iwlan` (+ kill of a live
+   instance). Why: on this MTK GSI the modem hosts its own IMS/ePDG stack (eIMS
+   via `epdg_wod` + `volte_stack`) and creates its own `ccmni*` PDN with a
+   modem-assigned address, while `com.google.android.iwlan` runs a parallel
+   userspace ePDG client (`IwlanDataService`) that creates `ipsec*` tunnels. On
+   WiFi re-association both race for the same ePDG address pool; iwlan (fast,
+   Connectivity-event driven) usually wins, takes the modem's address, and the
+   modem drops its PDN (`reg_state<0>`) -> calls fall back to CS. The modem
+   never uses the iwlan tunnel, so the package is dead weight.
+   `disable-user` persists across reboots and is idempotent; safe when the
+   package is absent (stock MTK ROMs never ship it).
+
+Artifacts:
+- `module/volte_fw/system/framework/framework.jar` (39,783,920 B) +
+  `telephony-common.jar` (2,136,126 B) - the full overlay payload.
+- `volte_fw-v5.zip` (16,458,412 B) = module.prop + customize.sh + service.sh +
+  both jars (`tar.exe -a -cf`; install via `ksud module install`).
+
 ## Bundle layout
 
-framework/              framework-patched.jar (39,783,920 B, v2 WFC+VoLTE),
+framework/              framework-patched.jar (carrier-config patch, shipped as
+                        module system/framework/framework.jar),
                         classes3-wfc.dex, CarrierConfigManager.patched.smali
-module/volte_fw/        module template + install.sh (empty-file shadow
-                        creation) + service.sh (per-boot runtime state)
+module/volte_fw/        module tree = the shipped zip payload:
+                        customize.sh (install-time logger, no-op),
+                        module.prop, service.sh (per-boot runtime state +
+                        iwlan disable), install.sh (dev helper for the legacy
+                        hand-push method) and system/framework/ with both
+                        patched jars (framework.jar + telephony-common.jar)
 tools/                  baksmali 3.0.7, smali 3.0.7, dexlib2 3.0.7 fat jars
+checker/wfc_indicator/  standalone VoLTE/VoWiFi status-bar checker app
+                        (sources + build.ps1 + prebuilt wfc_indicator apks)
+a16_*.patch             experimental source patches for a custom ROM build
+volte_fw-v5.zip         built, installable module (ksud module install)

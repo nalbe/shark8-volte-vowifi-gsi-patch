@@ -1,0 +1,13 @@
+diff --git a/services/audiopolicy/common/managerdefinitions/src/Serializer.cpp b/services/audiopolicy/common/managerdefinitions/src/Serializer.cpp
+index 6f19a7a..a4c1b9b 100644
+--- a/services/audiopolicy/common/managerdefinitions/src/Serializer.cpp
++++ b/services/audiopolicy/common/managerdefinitions/src/Serializer.cpp
+@@ -25,6 +25,8 @@
+ #include <libxml/parser.h>
+ #include <libxml/xinclude.h>
+ #include <media/convert.h>
++#include <cutils/properties.h>
++#include <system/audio.h>
+ #include <utils/Log.h>
+ #include <utils/StrongPointer.h>
+ #include <utils/Errors.h>

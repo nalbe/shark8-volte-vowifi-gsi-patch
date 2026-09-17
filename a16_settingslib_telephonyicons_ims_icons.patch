@@ -1,0 +1,24 @@
+--- /tmp/icop/TelephonyIcons.java	2026-09-09 20:21:11.651851900 +0300
++++ src/com/android/settingslib/mobile/TelephonyIcons.java	2026-09-09 20:20:34.501851900 +0300
+@@ -87,7 +87,12 @@
+     public static final MobileIconGroup WFC = new MobileIconGroup(
+             "WFC",
+             /* dataContentDescription= */ 0,
+-            /* dataType= */ 0);
++            /* dataType= */ R.drawable.ic_wfc_mobiledata);
++
++    public static final MobileIconGroup VOLTE = new MobileIconGroup(
++            "Volte",
++            /* dataContentDescription= */ 0,
++            /* dataType= */ R.drawable.ic_volte_mobiledata);
+ 
+     public static final MobileIconGroup UNKNOWN = new MobileIconGroup(
+             "Unknown",
+@@ -206,6 +211,7 @@
+         ICON_NAME_TO_ICON.put("carrier_network_change", CARRIER_NETWORK_CHANGE);
+         ICON_NAME_TO_ICON.put("3g", THREE_G);
+         ICON_NAME_TO_ICON.put("wfc", WFC);
++        ICON_NAME_TO_ICON.put("volte", VOLTE);
+         ICON_NAME_TO_ICON.put("unknown", UNKNOWN);
+         ICON_NAME_TO_ICON.put("e", E);
+         ICON_NAME_TO_ICON.put("1x", ONE_X);

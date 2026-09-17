@@ -1,0 +1,23 @@
+diff --git a/board-base.mk b/board-base.mk
+index 2cb5dbc..c38e385 100644
+--- a/board-base.mk
++++ b/board-base.mk
+@@ -8,5 +8,6 @@ DEVICE_FRAMEWORK_MANIFEST_FILE := device/phh/treble/framework_manifest.xml
+ 
+ BOARD_ROOT_EXTRA_FOLDERS += bt_firmware sec_storage efs persist
+ BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
++BUILD_BROKEN_DUP_RULES := true
+ 
+ BOARD_ROOT_EXTRA_SYMLINKS := $(filter-out $(BOARD_ROOT_EXTRA_SYMLINKS),/mnt/vendor/persist:/persist)
+diff --git a/overlay/frameworks/base/core/res/res/values/config.xml b/overlay/frameworks/base/core/res/res/values/config.xml
+index b832a66..c085878 100644
+--- a/overlay/frameworks/base/core/res/res/values/config.xml
++++ b/overlay/frameworks/base/core/res/res/values/config.xml
+@@ -57,4 +57,7 @@
+     <string name="config_wlan_network_service_package">com.google.android.iwlan</string>
+   <string name="config_qualified_networks_service_package">com.android.telephony.qns</string>
+   <bool name="config_lidControlsSleep">true</bool>
++	<bool name="config_device_volte_available">true</bool>
++	<bool name="config_device_wfc_ims_available">true</bool>
++  <string name="config_mainBuiltInDisplayCutout" translatable="false">M 0,0 L -16, 0 L -16, 36 L 16, 36 L 16, 0 Z @dp</string>
+ </resources>

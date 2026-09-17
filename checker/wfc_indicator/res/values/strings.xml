@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WFC Indicator</string>
+    <string name="ns_title">Network indicator</string>
+    <string name="wfc_txt">Wi-Fi Calling active</string>
+    <string name="volte_txt">VoLTE active</string>
+</resources>

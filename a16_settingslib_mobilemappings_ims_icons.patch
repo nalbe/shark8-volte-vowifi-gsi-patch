@@ -1,0 +1,25 @@
+--- /tmp/icop/MobileMappings.java	2026-09-09 20:21:11.651851900 +0300
++++ src/com/android/settingslib/mobile/MobileMappings.java	2026-09-09 20:20:34.521851900 +0300
+@@ -190,6 +190,14 @@
+                         TelephonyIcons.LTE_PLUS);
+             }
+         }
++        if (config.showVolteIcon) {
++            networkToIconLookup.put(toIconKey(
++                    TelephonyManager.NETWORK_TYPE_LTE),
++                    TelephonyIcons.VOLTE);
++            networkToIconLookup.put(toDisplayIconKey(
++                    TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA),
++                    TelephonyIcons.VOLTE);
++        }
+         networkToIconLookup.put(toIconKey(
+                 TelephonyManager.NETWORK_TYPE_IWLAN),
+                 TelephonyIcons.WFC);
+@@ -216,6 +224,7 @@
+         public boolean show4gFor3g = false;
+         public boolean alwaysShowCdmaRssi = false;
+         public boolean show4gForLte = false;
++        public boolean showVolteIcon = false;
+         public boolean show4glteForLte = false;
+         public boolean hideLtePlus = false;
+         public boolean hspaDataDistinguishable;
