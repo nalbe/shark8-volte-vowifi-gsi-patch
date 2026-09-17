@@ -29,13 +29,19 @@ if (-not $?) { throw "aapt2 link failed" }
 
 Write-Host "== javac"
 $srcs = Get-ChildItem "$Proj\src", "$T\gen" -Recurse -Filter *.java | ForEach-Object { $_.FullName }
-& "$JDK\javac.exe" -source 1.8 -target 1.8 -cp $PLAT -d "$T\classes" $srcs
-if (-not $?) { throw "javac failed" }
+$ErrorActionPreference = "Continue"
+& "$JDK\javac.exe" -nowarn -source 1.8 -target 1.8 -cp $PLAT -d "$T\classes" $srcs 2>$null
+$javacExit = $LASTEXITCODE
+$ErrorActionPreference = "Stop"
+if ($javacExit -ne 0) { throw "javac failed (exit $javacExit)" }
 
 Write-Host "== d8"
+$ErrorActionPreference = "Continue"
 & "$BT\d8.bat" --release --lib $PLAT --min-api 26 --output "$T\dex" `
-    (Get-ChildItem "$T\classes" -Recurse -Filter *.class | ForEach-Object { $_.FullName })
-if (-not $?) { throw "d8 failed" }
+    (Get-ChildItem "$T\classes" -Recurse -Filter *.class | ForEach-Object { $_.FullName }) 2>$null
+$d8Exit = $LASTEXITCODE
+$ErrorActionPreference = "Stop"
+if ($d8Exit -ne 0) { throw "d8 failed (exit $d8Exit)" }
 
 Write-Host "== repackage (add classes.dex)"
 Add-Type -AssemblyName System.IO.Compression

@@ -46,7 +46,7 @@ import java.util.concurrent.Executors;
 public class WfcIconService extends Service {
 
     private static final int NOTIF_ID = 1;
-    private static final String CHANNEL_ID = "wfc_indicator";
+    private static final String CHANNEL_ID = "wfc_indicator_v4";
     public static final String ACTION_START = "com.wfcind.app.START";
 
     private static final int MODE_NONE = 0;
@@ -110,7 +110,9 @@ public class WfcIconService extends Service {
         mExec = Executors.newSingleThreadExecutor();
 
         NotificationChannel ch = new NotificationChannel(CHANNEL_ID,
-                getString(R.string.ns_title), NotificationManager.IMPORTANCE_MIN);
+                getString(R.string.ns_title), NotificationManager.IMPORTANCE_DEFAULT);
+        ch.setSound(null, null);
+        ch.enableVibration(false);
         ch.setShowBadge(false);
         mNm.createNotificationChannel(ch);
     }

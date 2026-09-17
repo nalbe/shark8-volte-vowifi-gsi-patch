@@ -1,6 +1,9 @@
-# Build artifacts - rebuilt from module/volte_fw/ + framework/ (see PATCH.md)
+# Build artifacts - rebuilt from module/volte_fw/ + framework/ (see PATCH.md);
+# checker apk rebuilt via checker/wfc_indicator/build.ps1
 *.zip
+*.apk
 *.rar
+checker/wfc_indicator/build/
 
 # OS junk
 Thumbs.db
