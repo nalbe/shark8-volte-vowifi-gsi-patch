@@ -1,0 +1,6 @@
+id=volte_fw
+name=VoLTE + VoWiFi (IMS) framework patch
+version=v8
+versionCode=8
+author=Bastet
+description=Patches ImsPhoneCallTracker.isVowifiEnabled (IWLAN capability check no longer needs getImsRegistrationTech==IWLAN). v8: REVERTS the v5 iwlan-disable - the resident Google IWLAN client (com.google.android.iwlan) is left enabled (the pm disable-user from service.sh is removed, iwlan no longer disabled). Root cause of the VoWiFi regression: with iwlan disabled the modem never reports WLAN=HOME, QNS keeps iwlanEnable=false, the ePDG tunnel is never built and the modem stays on LTE forever; with iwlan enabled the modem enters IWLAN (RAT=18), QNS enables the client and the tunnel is built (working-day behavior 16.09 restored). Keeps per-boot runtime state for MTK IMS VoLTE + VoWiFi on AOSP-based GSI. v7: framework.jar patch removed - the phh Treble Settings quirk (persist.dbg.volte_avail_ovr / persist.dbg.wfc_avail_ovr / persist.dbg.allow_ims_off = 1) already makes ImsManager.isVolteEnabledByPlatform + isWfcEnabledByPlatform return true before any carrier config is read. v6: framework.jar was zipaligned to 4 bytes - ART can mmap the dex files directly instead of extracting them on every boot.

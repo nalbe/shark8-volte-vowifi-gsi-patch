@@ -1,6 +1,0 @@
-id=volte_fw
-name=VoLTE + VoWiFi (IMS) framework patch
-version=v5
-versionCode=5
-author=Bastet
-description=Patches CarrierConfigManager defaults (carrier_volte_available_bool, carrier_wfc_ims_available_bool, carrier_default_wfc_ims_enabled_bool, carrier_wfc_supports_wifi_only_bool = true) and ImsPhoneCallTracker.isVowifiEnabled (IWLAN capability check no longer needs getImsRegistrationTech==IWLAN). Applies per-boot runtime state for MTK IMS VoLTE + VoWiFi on AOSP-based GSI. v5: disables the resident Google IWLAN client (com.google.android.iwlan) whose parallel ePDG tunnel races the MTK modem eIMS client on WiFi re-association and kicks the modem off its IMS PDN (reg_state<0>). With iwlan disabled the modem owns the ePDG address pool and calls stay on Wi-Fi.

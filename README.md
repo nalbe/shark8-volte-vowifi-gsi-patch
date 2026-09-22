@@ -1,4 +1,4 @@
-# VoLTE + VoWiFi Patch Bundle - Black Shark 8
+# VoLTE + VoWiFi Patch Bundle - Blackview Shark 8
 
 Enable VoLTE and VoWiFi (Wi-Fi Calling / IWLAN) on a MediaTek MT6789 device
 running a phh GSI (Android 14) ROM.
